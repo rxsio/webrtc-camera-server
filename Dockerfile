@@ -18,6 +18,8 @@ RUN apt-get update \
         libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev libgstreamer-plugins-bad1.0-dev \
         gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav \
         gstreamer1.0-tools python3-gst-1.0 \
+        # hardware acceleration for amd (currently nonfunctional)
+        # mesa-va-drivers gstreamer1.0-vaapi va-driver-all \
   && rm -rf /var/lib/apt/lists/* 
 
 SHELL ["/bin/bash", "--login", "-c"]
@@ -33,10 +35,9 @@ RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.30.1/install.sh | b
 # install rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- --default-toolchain stable -y
 
-#RUN git clone --depth=1 --branch 0.10.9 https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git
-RUN git clone --depth=1 --branch main https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git
-#RUN git clone --branch main https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git
-#RUN cd gst-plugins-rs && git checkout 7ba0073052c81c8f2f1ebe500048ed6d974e81d8
+RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git \
+    && cd gst-plugins-rs && git checkout c350f3c2af30c588e6aafb9810b30dafd366032e \
+    && rm -r .git
 
 # install frontend dependencies
 WORKDIR /gst-plugins-rs/net/webrtc/gstwebrtc-api
@@ -53,6 +54,6 @@ RUN cargo build --release
 
 # copy test scripts
 WORKDIR /
-COPY run.sh run.sh
-COPY pipelines.py pipelines.py
+COPY ./src/run.sh run.sh
+COPY ./src/pipelines.py pipelines.py
 RUN chmod +x run.sh
