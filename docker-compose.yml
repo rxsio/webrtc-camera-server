@@ -1,0 +1,10 @@
+services:
+  # Launch core components of the rover software inside container
+  rover-soft:
+    image: registry.gitlab.com/ska_robotics/sirius/rover-soft/rover-soft:stable
+    restart: unless-stopped
+    network_mode: host
+    privileged: true # This is intentional
+    tty: true
+    devices:
+      - '/dev:/dev'
