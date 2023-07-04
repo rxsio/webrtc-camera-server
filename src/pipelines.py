@@ -107,6 +107,40 @@ class H264Camera(Camera):
         avdec_h264.link(sink)
 
 
+class MJPEGCamera(Camera):
+    def create_pipeline(self):
+        self.pipeline = Gst.Pipeline.new("pipeline")
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", self.on_message)
+
+        source = Gst.ElementFactory.make("v4l2src", "camera-source")
+        capsfilter = Gst.ElementFactory.make("capsfilter", "filter")
+        jpegdec = Gst.ElementFactory.make("jpegdec", "decode")
+        sink = Gst.ElementFactory.make("webrtcsink", "webrtc")
+
+        self.pipeline.add(source)
+        self.pipeline.add(capsfilter)
+        self.pipeline.add(jpegdec)
+        self.pipeline.add(sink)
+
+        source.set_property("device", self.path)
+        capsfilter.set_property(
+            "caps",
+            Gst.Caps.from_string(
+                f"image/jpeg, width=${self.width}, height=${self.height}, framerate=${self.framerate}/1"
+            ),
+        )
+
+        sink_config = Gst.Structure.new_empty("meta")
+        sink_config.set_value("display-name", self.name)
+        sink.set_property("meta", sink_config)
+
+        source.link(capsfilter)
+        capsfilter.link(jpegdec)
+        jpegdec.link(sink)
+
+
 def add_camera(device):
     global cameras
     global config
@@ -119,22 +153,47 @@ def add_camera(device):
     model = device.get("ID_MODEL")
 
     name = id_sanitized
-    protocol = "h264"
+    protocol = "mjpeg"
+    width = 1280
+    height = 720
+    framerate = 10
 
     if config["cameras"] is not None and id in config["cameras"]:
         camera_config = config["cameras"][id]
         name = camera_config["name"]
         protocol = camera_config["protocol"]
+        width = camera_config["width"]
+        height = camera_config["height"]
+        framerate = camera_config["framerate"]
         print(f"adding camera {name} with id={id} path={path}")
     else:
         print(f"adding unknown camera with id={id} path={path}")
         print(f"used config:")
-        print(yaml.dump({"cameras": {id: {"name": name, "protocol": protocol}}}))
+        print(
+            yaml.dump(
+                {
+                    "cameras": {
+                        id: {
+                            "name": name,
+                            "protocol": protocol,
+                            "width": width,
+                            "height": height,
+                            "framerate": framerate,
+                        }
+                    }
+                },
+                sort_keys=False,
+            )
+        )
 
     cameras_lock.acquire(blocking=True)
     if protocol == "h264":
         cameras[id] = H264Camera(
-            path=path, id=id, name=name, width=1920, height=1080, framerate=25
+            path=path, id=id, name=name, width=width, height=height, framerate=framerate
+        )
+    elif protocol == "mjpeg":
+        cameras[id] = MJPEGCamera(
+            path=path, id=id, name=name, width=width, height=height, framerate=framerate
         )
 
     cameras_lock.release()
@@ -178,7 +237,6 @@ def init_camera_monitoring():
 
     def log_event(action, device):
         if device.get("ID_V4L_CAPABILITIES") == ":capture:":
-            print(action, device, device.get("ID_PATH"))
             if action == "add":
                 add_camera(device)
             elif action == "remove":
