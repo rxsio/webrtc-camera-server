@@ -1,6 +1,7 @@
 import pyudev
 import threading
 import psutil
+import yaml
 import time
 import gi
 
@@ -9,26 +10,68 @@ from gi.repository import Gst
 
 Gst.init(None)
 
-context = pyudev.Context()
+udev_context = pyudev.Context()
 
 cameras = {}
 cameras_lock = threading.Lock()
+config = {}
 
 
 class Camera:
-    def __init__(self, path, id, name):
+    def __init__(self, path, id, name, width, height, framerate):
         self.path = path
         self.id = id
         self.name = name
 
+        self.width = width
+        self.height = height
+        self.framerate = framerate
+
         self.log(f"camera created")
 
+        self.create_pipeline()
         self.start_pipeline()
 
     def log(self, message):
         print(f"[{self.path}]: {message}")
 
+    def create_pipeline(self):
+        raise NotImplementedError()
+
     def start_pipeline(self):
+        self.pipeline.set_state(Gst.State.PLAYING)
+        self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
+
+        self.log("stream started")
+
+    def stop_pipeline(self):
+        self.pipeline.set_state(Gst.State.NULL)
+        self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
+
+    def restart_pipeline(self):
+        self.start_pipeline()
+        self.stop_pipeline()
+        self.log("stream restarted")
+
+    def on_message(self, bus, message):
+        self.log(message)
+        t = message.type
+        if t == Gst.MessageType.EOS:
+            self.log("stream ended")
+            self.restart_pipeline()
+        elif t == Gst.MessageType.ERROR:
+            self.player.set_state(Gst.State.NULL)
+            err, debug = message.parse_error()
+            self.log(f"stream error {err} {debug}")
+            self.restart_pipeline()
+
+    def __del__(self):
+        self.stop_pipeline()
+        self.log(f"camera destroyed")
+
+
+class H264Camera(Camera):
+    def create_pipeline(self):
         self.pipeline = Gst.Pipeline.new("pipeline")
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
@@ -50,7 +93,7 @@ class Camera:
         capsfilter.set_property(
             "caps",
             Gst.Caps.from_string(
-                "video/x-h264, width=1920, height=1080, framerate=25/1"
+                f"video/x-h264, width=${self.width}, height=${self.height}, framerate=${self.framerate}/1"
             ),
         )
 
@@ -63,38 +106,88 @@ class Camera:
         h264parse.link(avdec_h264)
         avdec_h264.link(sink)
 
-        self.pipeline.set_state(Gst.State.PLAYING)
-        self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
 
-        self.log("stream started")
+def add_camera(device):
+    global cameras
+    global config
 
-    def restart_pipeline(self):
-        self.pipeline.set_state(Gst.State.NULL)
-        self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
+    id = device.get("ID_PATH")
+    id_sanitized = device.get("ID_PATH_TAG")
+    path = device.device_node
+    serial = device.get("ID_SERIAL_SHORT")
+    vendor = device.get("ID_VENDOR")
+    model = device.get("ID_MODEL")
 
-        self.pipeline.set_state(Gst.State.PLAYING)
-        self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
-        self.log("stream restarted")
+    name = id_sanitized
+    protocol = "h264"
 
-    def stop_pipeline(self):
-        self.pipeline.set_state(Gst.State.NULL)
-        self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
+    if config["cameras"] is not None and id in config["cameras"]:
+        camera_config = config["cameras"][id]
+        name = camera_config["name"]
+        protocol = camera_config["protocol"]
+        print(f"adding camera {name} with id={id} path={path}")
+    else:
+        print(f"adding unknown camera with id={id} path={path}")
+        print(f"used config:")
+        print(yaml.dump({"cameras": {id: {"name": name, "protocol": protocol}}}))
 
-    def on_message(self, bus, message):
-        self.log(message)
-        t = message.type
-        if t == Gst.MessageType.EOS:
-            self.log("stream ended")
-            self.restart_pipeline()
-        elif t == Gst.MessageType.ERROR:
-            self.player.set_state(Gst.State.NULL)
-            err, debug = message.parse_error()
-            self.log(f"stream error {err} {debug}")
-            self.restart_pipeline()
+    cameras_lock.acquire(blocking=True)
+    if protocol == "h264":
+        cameras[id] = H264Camera(
+            path=path, id=id, name=name, width=1920, height=1080, framerate=25
+        )
 
-    def __del__(self):
-        self.stop_pipeline()
-        self.log(f"camera destroyed")
+    cameras_lock.release()
+
+
+def remove_camera(device):
+    global cameras
+
+    id = device.get("ID_PATH")
+
+    cameras_lock.acquire(blocking=True)
+
+    print(f"removing camera {cameras[id].name} with id={id} path={cameras[id].path}")
+    cameras[id].stop_pipeline()
+    del cameras[id]
+
+    cameras_lock.release()
+
+
+def get_cameras():
+    global cameras
+    global cameras_lock
+    global udev_context
+
+    print("getting cameras")
+    for device in udev_context.list_devices(
+        subsystem="video4linux", ID_V4L_CAPABILITIES=":capture:"
+    ):
+        # for property in device.properties:
+        #    print(f"{property} = {device.get(property)}")
+        add_camera(device)
+
+
+def init_camera_monitoring():
+    global cameras
+    global cameras_lock
+    global udev_context
+
+    monitor = pyudev.Monitor.from_netlink(udev_context)
+    monitor.filter_by("video4linux")
+
+    def log_event(action, device):
+        if device.get("ID_V4L_CAPABILITIES") == ":capture:":
+            print(action, device, device.get("ID_PATH"))
+            if action == "add":
+                add_camera(device)
+            elif action == "remove":
+                remove_camera(device)
+            else:
+                print(action, device)
+
+    observer = pyudev.MonitorObserver(monitor, log_event)
+    observer.start()
 
 
 def wait_for_signaller():
@@ -106,79 +199,17 @@ def wait_for_signaller():
         time.sleep(0.1)
 
 
-def add_camera(device):
-    global cameras
-
-    id = device.get("ID_PATH")
-    default_name = device.get("ID_PATH_TAG")
-    path = device.device_node
-    serial = device.get("ID_SERIAL_SHORT")
-    vendor = device.get("ID_VENDOR")
-    model = device.get("ID_MODEL")
-
-    print(f"adding camera {id} = {path}")
-
-    cameras[id] = Camera(path, id, default_name)
+def load_config():
+    global config
+    with open("/config.yaml", "r") as stream:
+        config = yaml.safe_load(stream)
 
 
-def remove_camera(device):
-    global cameras
+if __name__ == "__main__":
+    load_config()
+    wait_for_signaller()
+    get_cameras()
+    init_camera_monitoring()
 
-    id = device.get("ID_PATH")
-    print(f"removing camera {id}")
-
-    cameras[id].stop_pipeline()
-    del cameras[id]
-
-    print(cameras)
-
-
-def get_cameras():
-    global cameras
-    global cameras_lock
-    global context
-
-    cameras_lock.acquire(blocking=True)
-    print("getting cameras")
-    for device in context.list_devices(
-        subsystem="video4linux", ID_V4L_CAPABILITIES=":capture:"
-    ):
-        # for property in device.properties:
-        #    print(f"{property} = {device.get(property)}")
-        add_camera(device)
-
-    cameras_lock.release()
-
-
-def init_camera_monitoring():
-    global cameras
-    global cameras_lock
-    global context
-
-    monitor = pyudev.Monitor.from_netlink(context)
-    monitor.filter_by("video4linux")
-
-    def log_event(action, device):
-        if device.get("ID_V4L_CAPABILITIES") == ":capture:":
-            print(action, device, device.get("ID_PATH"))
-            if action == "add":
-                cameras_lock.acquire(blocking=True)
-                add_camera(device)
-                cameras_lock.release()
-            elif action == "remove":
-                cameras_lock.acquire(blocking=True)
-                remove_camera(device)
-                cameras_lock.release()
-            else:
-                print(action, device)
-
-    observer = pyudev.MonitorObserver(monitor, log_event)
-    observer.start()
-
-
-wait_for_signaller()
-get_cameras()
-init_camera_monitoring()
-
-while True:
-    pass
+    while True:
+        pass

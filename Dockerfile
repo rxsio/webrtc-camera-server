@@ -9,7 +9,7 @@ RUN apt-get update \
         # useful utils
         vim git curl \ 
         # required for the python script
-        python3-pyudev python3-psutil udev \
+        python3-yaml python3-pyudev python3-psutil udev \
         # required for building gst-plugins-rs
         build-essential libssl-dev libx264-dev libvpx-dev libopus-dev  \
         # required for webrtc-sink to work properly
