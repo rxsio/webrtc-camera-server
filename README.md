@@ -15,7 +15,7 @@ docker build --pull -t gstreamer-cameras .
 To start the server, run
 
 ```bash
-sudo docker run --rm --privileged -it -v /run/udev:/run/udev:ro -v ./config/config.yaml:/config.yaml --net=host --entrypoint bash gstreamer-cameras
+docker run --rm --privileged -it -v /run/udev:/run/udev:ro -v /dev:/dev -v ./config/config.yaml:/config.yaml --net=host --entrypoint bash gstreamer-cameras
 ```
 
 And the inside of the container run

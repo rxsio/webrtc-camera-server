@@ -270,4 +270,4 @@ if __name__ == "__main__":
     init_camera_monitoring()
 
     while True:
-        pass
+        time.sleep(1)
