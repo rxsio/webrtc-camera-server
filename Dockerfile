@@ -35,6 +35,7 @@ RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.30.1/install.sh | b
 # install rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- --default-toolchain stable -y
 
+# clone gst-plugins-rs and select a specific commit, to ensure stable builds
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git \
     && cd gst-plugins-rs && git checkout c350f3c2af30c588e6aafb9810b30dafd366032e \
     && rm -r .git
@@ -57,3 +58,5 @@ WORKDIR /
 COPY ./src/run.sh run.sh
 COPY ./src/pipelines.py pipelines.py
 RUN chmod +x run.sh
+
+CMD ["./run.sh"]

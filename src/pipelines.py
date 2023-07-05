@@ -49,8 +49,8 @@ class Camera:
         self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
 
     def restart_pipeline(self):
-        self.start_pipeline()
         self.stop_pipeline()
+        self.start_pipeline()
         self.log("stream restarted")
 
     def on_message(self, bus, message):
@@ -98,7 +98,7 @@ class H264Camera(Camera):
         )
 
         sink_config = Gst.Structure.new_empty("meta")
-        sink_config.set_value("display-name", self.name)
+        sink_config.set_value("name", self.name)
         sink.set_property("meta", sink_config)
 
         source.link(capsfilter)
@@ -133,7 +133,7 @@ class MJPEGCamera(Camera):
         )
 
         sink_config = Gst.Structure.new_empty("meta")
-        sink_config.set_value("display-name", self.name)
+        sink_config.set_value("name", self.name)
         sink.set_property("meta", sink_config)
 
         source.link(capsfilter)
