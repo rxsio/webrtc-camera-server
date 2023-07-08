@@ -16,6 +16,9 @@ cameras = {}
 cameras_lock = threading.Lock()
 config = {}
 
+signaller_uri = "wss://localhost:8443"
+signaller_cafile = "/certificates/RootCA.pem"
+
 
 class Camera:
     def __init__(self, path, id, name, width, height, framerate):
@@ -101,6 +104,10 @@ class H264Camera(Camera):
         sink_config.set_value("name", self.name)
         sink.set_property("meta", sink_config)
 
+        signaller = sink.get_property("signaller")
+        signaller.set_property("uri", signaller_uri)
+        signaller.set_property("cafile", signaller_cafile)
+
         source.link(capsfilter)
         capsfilter.link(h264parse)
         h264parse.link(avdec_h264)
@@ -135,6 +142,10 @@ class MJPEGCamera(Camera):
         sink_config = Gst.Structure.new_empty("meta")
         sink_config.set_value("name", self.name)
         sink.set_property("meta", sink_config)
+
+        signaller = sink.get_property("signaller")
+        signaller.set_property("uri", signaller_uri)
+        signaller.set_property("cafile", signaller_cafile)
 
         source.link(capsfilter)
         capsfilter.link(jpegdec)

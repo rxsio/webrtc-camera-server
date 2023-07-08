@@ -37,7 +37,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- --def
 
 # clone gst-plugins-rs and select a specific commit, to ensure stable builds
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git \
-    && cd gst-plugins-rs && git checkout c350f3c2af30c588e6aafb9810b30dafd366032e \
+    && cd gst-plugins-rs && git checkout 1dd13c481216ba093468ffe482a9c4f7f35bba41 \
     && rm -r .git
 
 # install frontend dependencies

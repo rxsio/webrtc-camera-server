@@ -10,4 +10,5 @@ services:
             - '/run/udev:/run/udev:ro'
             - '/dev:/dev'
             - './config/config.yaml:/config.yaml'
+            - '../certificates:/certificates'
         network_mode: host
