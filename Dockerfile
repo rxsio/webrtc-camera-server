@@ -25,6 +25,7 @@ RUN apt-get update \
 SHELL ["/bin/bash", "--login", "-c"]
 
 # install nvm
+RUN mkdir /usr/local/nvm
 ENV NVM_DIR /usr/local/nvm
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash \
     && source $NVM_DIR/nvm.sh \
@@ -39,8 +40,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- --def
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git \
     #&& cd gst-plugins-rs && git checkout 1dd13c481216ba093468ffe482a9c4f7f35bba41 \
     #&& cd gst-plugins-rs && git checkout 3c1f05cdc334cb3e26952e5a0c48be71835555e2 \
-    && cd gst-plugins-rs && git checkout e83238b6813742acba004ad590b1843739d3b920 \
-    && rm -r .git
+    # && cd gst-plugins-rs && git checkout e83238b6813742acba004ad590b1843739d3b920 \
+    && cd gst-plugins-rs && rm -r .git
 
 # install frontend dependencies
 WORKDIR /gst-plugins-rs/net/webrtc/gstwebrtc-api
