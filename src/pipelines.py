@@ -1,17 +1,37 @@
-import pyudev
+import logging
 import threading
-import psutil
-import yaml
 import time
-import gi
 
+import gi
+import psutil
+import pyudev
+import yaml
+
+
+# Setup Logger
+logFormatter = logging.Formatter("%(asctime)s [%(levelname)s]: %(message)s")
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+logger.addHandler(consoleHandler)
+
+fileHandler = logging.FileHandler("pipeline.log")
+fileHandler.setFormatter(logFormatter)
+logger.addHandler(fileHandler)
+
+
+# Setup GStreamer
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst
-
 Gst.init(None)
 
+# Setup pyudev
 udev_context = pyudev.Context()
 
+# Setup cameras
 cameras = {}
 cameras_lock = threading.Lock()
 config = {}
@@ -36,7 +56,7 @@ class Camera:
         self.start_pipeline()
 
     def log(self, message):
-        print(f"[{self.path}]: {message}")
+        logger.info(f"[{self.path}]: {message}")
 
     def create_pipeline(self):
         raise NotImplementedError()
@@ -153,6 +173,7 @@ class MJPEGCamera(Camera):
 
 
 def add_camera(device):
+    logger.debug("Add camera {debug}")
     global cameras
     global config
 
@@ -176,11 +197,11 @@ def add_camera(device):
         width = camera_config["width"]
         height = camera_config["height"]
         framerate = camera_config["framerate"]
-        print(f"adding camera {name} with id={id} path={path}")
+        logger.info(f"adding camera {name} with id={id} path={path}")
     else:
-        print(f"adding unknown camera with id={id} path={path}")
-        print(f"used config:")
-        print(
+        logger.info(f"adding unknown camera with id={id} path={path}")
+        logger.info(f"used config:")
+        logger.info(
             yaml.dump(
                 {
                     "cameras": {
@@ -211,13 +232,14 @@ def add_camera(device):
 
 
 def remove_camera(device):
+    logging.debug("Remove camera {device}")
     global cameras
 
     id = device.get("ID_PATH")
 
     cameras_lock.acquire(blocking=True)
 
-    print(f"removing camera {cameras[id].name} with id={id} path={cameras[id].path}")
+    logger.info(f"removing camera {cameras[id].name} with id={id} path={cameras[id].path}")
     cameras[id].stop_pipeline()
     del cameras[id]
 
@@ -225,20 +247,24 @@ def remove_camera(device):
 
 
 def get_cameras():
+    logging.debug("Get cameras")
     global cameras
     global cameras_lock
     global udev_context
 
-    print("getting cameras")
+    logger.info("getting cameras")
     for device in udev_context.list_devices(
         subsystem="video4linux", ID_V4L_CAPABILITIES=":capture:"
     ):
         # for property in device.properties:
-        #    print(f"{property} = {device.get(property)}")
+        #    logger.info(f"{property} = {device.get(property)}")
         add_camera(device)
 
+    logging.debug("Cameras discovered")
 
 def init_camera_monitoring():
+    logger.debug("Init camera monitoring")
+
     global cameras
     global cameras_lock
     global udev_context
@@ -253,26 +279,34 @@ def init_camera_monitoring():
             elif action == "remove":
                 remove_camera(device)
             else:
-                print(action, device)
+                logger.info(action, device)
 
     observer = pyudev.MonitorObserver(monitor, log_event)
+    logger.debug("Start observer")
     observer.start()
 
 
 def wait_for_signaller():
-    print("waiting for signaller...")
+    logger.debug("Wait for signaller")
+
+    logger.info("waiting for signaller...")
     while True:
         for connection in psutil.net_connections():
             if connection.laddr.ip == "0.0.0.0" and connection.laddr.port == 8443:
                 return
         time.sleep(0.1)
 
+    logger.debug("Signaller found!")
+
 
 def load_config():
+    logger.debug("Load configuration")
+
     global config
     with open("/config.yaml", "r") as stream:
         config = yaml.safe_load(stream)
 
+    logger.info("Configuration loaded!")
 
 if __name__ == "__main__":
     load_config()
