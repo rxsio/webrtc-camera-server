@@ -12,4 +12,4 @@ services:
             - './config/config.yaml:/config.yaml'
             - '../certificates:/certificates'
         ports: 
-            - 9090:9090
+            - 8443:8443     # Signaller PORT
