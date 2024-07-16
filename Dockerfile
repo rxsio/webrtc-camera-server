@@ -35,6 +35,9 @@ RUN apt-get -y install python3-yaml python3-pyudev python3-psutil udev
     # Frontend dependencies
 RUN apt-get -y install webpack
 
+    # Bridge dependencies
+RUN apt-get -y install apt-utils git
+
 #endregion
 
 #region Install Rust
@@ -64,7 +67,17 @@ RUN source $NVM_DIR/nvm.sh \
     && nvm alias default 18 \
     && nvm use default
 
+#endregion
 
+#region Install ROS
+
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get -y install \
+    python3-colcon-core \
+    python3-colcon-common-extensions \
+    python3-rosdep
+
+RUN bash -c '. /opt/ros/jazzy/setup.bash && \
+    rosdep init '
 
 #endregion
 
@@ -114,11 +127,36 @@ RUN chmod +x run.sh
 
 #endregion
 
+#region Build ROS-GST bridge
+    
+    # Download repository with bridge
+RUN mkdir -p /jazzy_ws/src
+WORKDIR /jazzy_ws/
+RUN git clone https://github.com/BrettRD/ros-gst-bridge.git src/ros-gst-bridge
+
+    # Prepare ROS
+RUN bash -c 'source /opt/ros/jazzy/setup.bash && \
+DEBIAN_FRONTEND=noninteractive rosdep update && \
+DEBIAN_FRONTEND=noninteractive rosdep install --from-paths . --ignore-src -r -y'
+
+    # Build bridge
+RUN bash -c 'source /opt/ros/jazzy/setup.bash && \
+    colcon build '
+
+    # Verify
+RUN bash -c 'source install/setup.sh && \
+    GST_PLUGIN_PATH=install/gst_bridge/lib/gst_bridge gst-inspect-1.0 rosimagesrc'
+
+#endregion
+
 #region Clear image
 
 #endregion
 
 #region Epilog
+
+USER root
+WORKDIR /
 
 CMD ["./run.sh"]
 

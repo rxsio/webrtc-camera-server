@@ -25,6 +25,10 @@ export GST_PLUGIN_PATH=/gst-plugins-rs/target/release:$GST_PLUGIN_PATH
     (
         python3 pipelines.py ; kill 0
     ) &
+    (
+        bash -c 'source install/setup.sh && \
+    GST_PLUGIN_PATH=install/gst_bridge/lib/gst_bridge:/gst-plugins-rs/target/release gst-launch-1.0 videotestsrc pattern=snow ! rosimagesink ros-topic="image_gamma"'
+    ) &
     wait
 )
 
