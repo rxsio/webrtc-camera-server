@@ -102,11 +102,14 @@ RUN chmod +x run.sh
 
 #region Clear image
 
+    # Remove packages
+RUN apt-get -y remove gcc cmake git cmake-data cppcheck googletest
+RUN apt-get -y remove fonts-urw-base35 opencv-data fonts-droid-fallback 
+RUN apt-get -y remove perl-modules-5.38 qttranslations5-l10n poppler-data    
+RUN apt-get -y remove mesa-vulkan-drivers pocketsphinx-en-us libopencv-contrib-dev
+
     # Remove APT lists
 RUN rm -rf /var/lib/apt/lists/*
-
-    # Remove Rust
-RUN apt-get -y remove cargo
 
     # Remove cache and dependencies
 RUN rm -rf ./root/.cargo
@@ -117,8 +120,29 @@ RUN rm -rf ./gst-plugins-rs/target/release/deps
 RUN find /gst-plugins-rs/target/release -type f -name "*.rlib" -delete
 RUN find /gst-plugins-rs/target/release -type f -name "*.so" | xargs strip 
 
-    # Remove .rlib in rustlib
-RUN find /usr/lib/rustlib -type f -name "*.rlib" -delete
+    # Clean gst-plugins
+WORKDIR /gst-plugins-rs
+RUN ls /gst-plugins-rs | grep -xv "target" | xargs rm -rf 
+RUN rm -rf /gst-plugins-rs/target/release/.fingerprint
+
+    # Clear /usr/share
+RUN rm -rf /usr/share/pocketsphinx
+RUN rm -rf /usr/share/icons
+RUN rm -rf /usr/share/qt5
+RUN rm -rf /usr/share/poppler
+RUN rm -rf /usr/share/fonts-droid-fallback
+RUN rm -rf /usr/share/perl
+RUN rm -rf /usr/share/cmake-3.28
+RUN rm -rf /usr/share/fonts
+RUN rm -rf /usr/share/doc
+RUN rm -rf /usr/share/proj
+RUN rm -rf /usr/share/vim
+RUN rm -rf /usr/lib/rustlib
+
+# Clear apt
+    RUN apt-get -y autoremove
+    RUN apt-get -y autoclean
+    RUN apt-get -y clean
 
 #endregion
 
