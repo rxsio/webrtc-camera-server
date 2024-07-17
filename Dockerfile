@@ -46,17 +46,6 @@ RUN apt-get -y install cargo
 
 SHELL ["/bin/bash", "--login", "-c"]
 
-    # Install NVM
-RUN mkdir /usr/local/nvm
-ENV NVM_DIR /usr/local/nvm
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-
-    # Install Node 18
-RUN source $NVM_DIR/nvm.sh \
-    && nvm install 18 \
-    && nvm alias default 18 \
-    && nvm use default
-
 #endregion
 
 #region Clone repository
