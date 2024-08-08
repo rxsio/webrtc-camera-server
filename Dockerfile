@@ -1,7 +1,7 @@
-#region Prolog
+#region Build stage
 
     # Build on ros image
-FROM ros:jazzy-ros-core
+FROM ros:jazzy-ros-core as build
 
     # Change default shell used by Docker to bash
 SHELL ["/bin/bash", "-c"]
@@ -14,7 +14,7 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update
 
     # Usefull utilities
-RUN apt-get -y install vim git curl
+RUN apt-get -y install git curl
 
     # GStreamer dependencies
 RUN apt-get -y install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev \
@@ -32,9 +32,6 @@ RUN apt-get -y install libnice-dev gstreamer1.0-nice
     # Python dependencies
 RUN apt-get -y install python3-yaml python3-pyudev python3-psutil udev
 
-    # Frontend dependencies
-RUN apt-get -y install webpack
-
 #endregion
 
 #region Install Rust
@@ -43,28 +40,11 @@ RUN apt-get -y install webpack
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- --default-toolchain stable -y
 RUN apt-get -y install cargo
 
-#     # Update toolchain
-# RUN rustup update stable
-# RUN cargo install cargo-c
-
 #endregion
 
 #region Install Node.js
 
 SHELL ["/bin/bash", "--login", "-c"]
-
-    # Install NVM
-RUN mkdir /usr/local/nvm
-ENV NVM_DIR /usr/local/nvm
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-
-    # Install Node 18
-RUN source $NVM_DIR/nvm.sh \
-    && nvm install 18 \
-    && nvm alias default 18 \
-    && nvm use default
-
-
 
 #endregion
 
@@ -76,11 +56,6 @@ RUN cd gst-plugins-rs
 #endregion
 
 #region Build frontend
-
-WORKDIR /gst-plugins-rs/net/webrtc/gstwebrtc-api
-RUN source $NVM_DIR/nvm.sh \
-    && npm install \
-    && npm run build
 
 #endregion
 
@@ -116,10 +91,55 @@ RUN chmod +x run.sh
 
 #region Clear image
 
+    # Remove packages
+RUN apt-get -y remove gcc cmake git cmake-data cppcheck googletest
+RUN apt-get -y remove fonts-urw-base35 opencv-data fonts-droid-fallback 
+RUN apt-get -y remove perl-modules-5.38 qttranslations5-l10n poppler-data    
+RUN apt-get -y remove mesa-vulkan-drivers pocketsphinx-en-us libopencv-contrib-dev
+
+    # Remove APT lists
+RUN rm -rf /var/lib/apt/lists/*
+
+    # Remove cache and dependencies
+RUN rm -rf ./root/.cargo
+RUN rm -rf ./root/.rustup
+RUN rm -rf ./gst-plugins-rs/target/release/deps
+
+    # Remove .rlib and strip .so in gst-plugins
+RUN find /gst-plugins-rs/target/release -type f -name "*.rlib" -delete
+RUN find /gst-plugins-rs/target/release -type f -name "*.so" | xargs strip 
+
+    # Clean gst-plugins
+WORKDIR /gst-plugins-rs
+RUN ls /gst-plugins-rs | grep -xv "target" | xargs rm -rf 
+RUN rm -rf /gst-plugins-rs/target/release/.fingerprint
+
+    # Clear /usr/share
+RUN rm -rf /usr/share/pocketsphinx
+RUN rm -rf /usr/share/icons
+RUN rm -rf /usr/share/qt5
+RUN rm -rf /usr/share/poppler
+RUN rm -rf /usr/share/fonts-droid-fallback
+RUN rm -rf /usr/share/perl
+RUN rm -rf /usr/share/cmake-3.28
+RUN rm -rf /usr/share/fonts
+RUN rm -rf /usr/share/doc
+RUN rm -rf /usr/share/proj
+RUN rm -rf /usr/share/vim
+RUN rm -rf /usr/lib/rustlib
+
+# Clear apt
+    RUN apt-get -y autoremove
+    RUN apt-get -y autoclean
+    RUN apt-get -y clean
+
 #endregion
 
-#region Epilog
+#region Production stage
 
+FROM scratch
+COPY --from=build / /
+WORKDIR /
 CMD ["./run.sh"]
 
 #endregion
