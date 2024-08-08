@@ -17,7 +17,7 @@ export GST_PLUGIN_PATH=/gst-plugins-rs/target/release:$GST_PLUGIN_PATH
         WEBRTCSINK_SIGNALLING_SERVER_LOG=debug ./gst-plugins-rs/target/release/gst-webrtc-signalling-server --cert /certificates/firo.p12 --cert-password skar ; kill 0
     ) &
     (
-        gst-launch-1.0 webrtcsink name=ws meta="meta,name=gst-stream" signaller::uri="wss://0.0.0.0:8443" signaller::cafile="/certificates/RootCA.pem" videotestsrc ! ws. audiotestsrc ! ws. ; kill 0
+        gst-launch-1.0 webrtcsink name=ws meta="meta,name=gst-stream" signaller::uri="wss://firo2.local:8443" signaller::cafile="/certificates/RootCA.pem" videotestsrc ! ws. audiotestsrc ! ws. ; kill 0
     ) &
     (
         python3 pipelines.py ; kill 0
