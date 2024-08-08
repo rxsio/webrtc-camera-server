@@ -3,7 +3,7 @@
 #region Prepare
 
     # Activate NVM
-source /usr/local/nvm/nvm.sh
+# source /usr/local/nvm/nvm.sh
 
     # Export GST_PLUGIN_PATH
 export GST_PLUGIN_PATH=/gst-plugins-rs/target/release:$GST_PLUGIN_PATH
