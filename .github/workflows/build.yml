@@ -44,7 +44,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
-            ${{ github.ref_type == 'tag' && (env.IMAGE_NAME + ':' + github.ref) }}
+            ${{ github.ref_type == 'tag' && format('{0}:{1}', env.IMAGE_NAME, github.ref) }}
           cache-from: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
 
       - name: Attest
