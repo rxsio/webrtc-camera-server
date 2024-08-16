@@ -303,7 +303,7 @@ def load_config():
     logger.debug("Load configuration")
 
     global config
-    with open("/config.yaml", "r") as stream:
+    with open("/configuration/cameras/config.yml", "r") as stream:
         config = yaml.safe_load(stream)
 
     logger.info("Configuration loaded!")
