@@ -45,9 +45,9 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
           cache-from: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
 
-      - name: Attest
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+      # - name: Attest
+      #   uses: actions/attest-build-provenance@v1
+      #   with:
+      #     subject-name: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
+      #     subject-digest: ${{ steps.push.outputs.digest }}
+      #     push-to-registry: true
