@@ -10,7 +10,7 @@ on:
   
 env:
   REGISTRY: ghcr.io
-  IMAGE_CHANNEL: ${{ github.ref == 'refs/heads/release' && 'stable' || 'nightly' }}
+  IMAGE_CHANNEL: ${{ github.ref_type == 'tag' && github.ref || (github.ref == 'refs/heads/release' && 'stable' || 'nightly') }}
   IMAGE_NAME: ghcr.io/${{ github.repository }}
 
 jobs:
@@ -42,9 +42,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
-            ${{ github.ref_type == 'tag' && format('{0}:{1}', env.IMAGE_NAME, github.ref) }}
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
           cache-from: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_CHANNEL }}
 
       - name: Attest
