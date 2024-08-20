@@ -3,6 +3,7 @@ import threading
 import time
 
 import gi
+import httpx
 import psutil
 import pyudev
 import yaml
@@ -123,6 +124,7 @@ class H264Camera(Camera):
         sink_config = Gst.Structure.new_empty("meta")
         sink_config.set_value("name", self.name)
         sink.set_property("meta", sink_config)
+        sink.set_property("turn-servers", turns)
 
         signaller = sink.get_property("signaller")
         signaller.set_property("uri", signaller_uri)
@@ -162,6 +164,7 @@ class MJPEGCamera(Camera):
         sink_config = Gst.Structure.new_empty("meta")
         sink_config.set_value("name", self.name)
         sink.set_property("meta", sink_config)
+        sink.set_property("turn-servers", turns)
 
         signaller = sink.get_property("signaller")
         signaller.set_property("uri", signaller_uri)
@@ -229,6 +232,51 @@ def add_camera(device):
         )
 
     cameras_lock.release()
+
+
+def get_turn_credentials():
+    headers = {
+        "Authorization": f"Bearer {config.get("apiToken", "")}",
+        "Content-Type": "application/json"
+    }
+    payload = {"ttl": 86400 * 90}
+    
+    try:
+        with httpx.Client() as client:
+            response = client.post(
+                config.get("url", "").format(TURN_TOKEN=config.get("turnToken", "")),
+                headers=headers,
+                json=payload
+            )
+            response.raise_for_status()
+            return response.json().get("iceServers")
+    except httpx.HTTPStatusError as e:
+        return None
+    except httpx.RequestError as e:
+        return None
+    
+    
+def process_turn_settings():
+    credentials = get_turn_credentials()
+    servers = []
+    
+    if credentials is None:
+        return None
+    
+    user = credentials.get("username", "")
+    password = credentials.get("credential", "")
+    
+    for url in credentials.get("urls", []):
+        if not url.startswith("turn:"):
+            continue
+        
+        protocol = url[:url.index(":")]
+        host = url[url.index(":") + 1:]
+        
+        servers.append(f"{protocol}://{user}:{password}@{host}")
+        
+    logger.debug(f"TURN Servers: {servers}")
+    return servers
 
 
 def remove_camera(device):
@@ -305,6 +353,9 @@ def load_config():
     global config
     with open("/configuration/cameras/config.yml", "r") as stream:
         config = yaml.safe_load(stream)
+        
+    global turns
+    turns = process_turn_settings()
 
     logger.info("Configuration loaded!")
 

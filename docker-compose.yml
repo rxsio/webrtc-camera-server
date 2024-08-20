@@ -9,7 +9,7 @@ services:
         volumes:
             - '/run/udev:/run/udev:ro'
             - '/dev:/dev'
-            - './config/config.yaml:/config.yaml'
+            - './config:/configuration'
             - '../certificates:/certificates'
         ports: 
             - 8443:8443     # Signaller PORT
