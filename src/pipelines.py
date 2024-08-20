@@ -273,7 +273,7 @@ def process_turn_settings():
     password = credentials.get("credential", "")
     
     for url in credentials.get("urls", []):
-        if not url.startswith("turn:"):
+        if not url.startswith("turn:") and not url.startswith("turns:"):
             continue
         
         protocol = url[:url.index(":")]
