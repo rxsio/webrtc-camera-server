@@ -124,7 +124,9 @@ class H264Camera(Camera):
         sink_config = Gst.Structure.new_empty("meta")
         sink_config.set_value("name", self.name)
         sink.set_property("meta", sink_config)
-        sink.set_property("turn-servers", turns)
+        
+        if turns:
+            sink.set_property("turn-servers", Gst.ValueArray(tuple(turns)))
 
         signaller = sink.get_property("signaller")
         signaller.set_property("uri", signaller_uri)
@@ -164,7 +166,9 @@ class MJPEGCamera(Camera):
         sink_config = Gst.Structure.new_empty("meta")
         sink_config.set_value("name", self.name)
         sink.set_property("meta", sink_config)
-        sink.set_property("turn-servers", turns)
+        
+        if turns:
+            sink.set_property("turn-servers", Gst.ValueArray(tuple(turns)))
 
         signaller = sink.get_property("signaller")
         signaller.set_property("uri", signaller_uri)
@@ -251,8 +255,10 @@ def get_turn_credentials():
             response.raise_for_status()
             return response.json().get("iceServers")
     except httpx.HTTPStatusError as e:
+        logger.warn("Cannot get TURNs: " + str(e))
         return None
     except httpx.RequestError as e:
+        logger.warn("Cannot get TURNs: " + str(e))
         return None
     
     
