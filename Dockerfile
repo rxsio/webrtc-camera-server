@@ -81,8 +81,12 @@ RUN cargo build --release
 
     # Copy
 WORKDIR /
+COPY ./src/run.sh run.sh
 COPY ./src/run.py run.py
 COPY ./src/pipelines.py pipelines.py
+
+    # Change attributes
+RUN chmod +x run.sh
 
 #endregion
 
