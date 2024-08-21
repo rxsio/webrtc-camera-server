@@ -11,8 +11,16 @@ class SignallerConfig(BaseModel):
     certificatePassword: Optional[str] = None
 
 
+class Camera:
+    name: str
+    protocol: str
+    width: int
+    height: int
+    framerate: int
+
+
 class PipelinesConfig(BaseModel):
-    ...
+    cameras: dict[str, Camera]
 
 
 class TurnConfig(BaseModel):
