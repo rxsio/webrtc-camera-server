@@ -8,8 +8,11 @@ from config import load_signaller_config, SignallerConfig
 def create_signaller(config: SignallerConfig):
     env = os.environ.copy()
     env["WEBRTCSINK_SIGNALLING_SERVER_LOG"] = "debug"
-    env["GST_PLUGIN_PATH"] = "/gst-plugins-rs/target/release:" + os.environ[
-        "GST_PLUGIN_PATH"]
+
+    gst_plugin_path = "/gst-plugins-rs/target/release"
+    if "GST_PLUGIN_PATH" in os.environ:
+        gst_plugin_path = gst_plugin_path + ":" + os.environ["GST_PLUGIN_PATH"]
+    env["GST_PLUGIN_PATH"] = gst_plugin_path
 
     command = [
         "./gst-plugins-rs/target/release/gst-webrtc-signalling-server",
