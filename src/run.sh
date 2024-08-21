@@ -1,5 +1,12 @@
 #!/bin/bash
 
+#region Prepare
+
+    # Export GST_PLUGIN_PATH
+export GST_PLUGIN_PATH=/gst-plugins-rs/target/release:$GST_PLUGIN_PATH
+
+#endregion
+
 #region Main loop
 
     # 1. Run signalling server

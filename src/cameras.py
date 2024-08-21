@@ -120,9 +120,11 @@ class H264Camera(Camera):
         if self.turn_settings is not None:
             sink.set_property("turn-servers", Gst.ValueArray(tuple(self.turn_settings)))
 
-        uri = self.config_signaller.host
-        if uri == "0.0.0.0":
-            uri = "localhost"
+        host = self.config_signaller.host
+        if host == "0.0.0.0":
+            host = "localhost"
+
+        uri = f"wss://{host}:{self.config_signaller.port}"
 
         signaller = sink.get_property("signaller")
         signaller.set_property("uri", uri)
@@ -166,9 +168,11 @@ class MJPEGCamera(Camera):
         if self.turn_settings is not None:
             sink.set_property("turn-servers", Gst.ValueArray(tuple(self.turn_settings)))
 
-        uri = self.config_signaller.host
-        if uri == "0.0.0.0":
-            uri = "localhost"
+        host = self.config_signaller.host
+        if host == "0.0.0.0":
+            host = "localhost"
+
+        uri = f"wss://{host}:{self.config_signaller.port}"
 
         signaller = sink.get_property("signaller")
         signaller.set_property("uri", uri)
