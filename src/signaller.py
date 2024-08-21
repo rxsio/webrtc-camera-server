@@ -17,7 +17,7 @@ def create_signaller(config: SignallerConfig):
     command = [
         "./gst-plugins-rs/target/release/gst-webrtc-signalling-server",
         "--host", config.host,
-        "--port", config.port,
+        "--port", str(config.port),
 
     ]
 
@@ -27,7 +27,7 @@ def create_signaller(config: SignallerConfig):
             "--cert-password", config.certificatePassword
         ])
 
-    process = subprocess.Popen(command, env=env)
+    process = subprocess.Popen([str(elem) for elem in command], env=env)
 
     try:
         process.wait()
