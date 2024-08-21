@@ -82,7 +82,7 @@ RUN cargo build --release
     # Copy
 WORKDIR /
 COPY ./src/run.sh run.sh
-COPY src/signaller signaller.py
+COPY src/signaller.py signaller.py
 COPY src/pipelines.py pipelines.py
 COPY src/config.py config.py
 COPY src/cameras.py cameras.py
