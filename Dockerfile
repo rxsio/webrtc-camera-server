@@ -85,7 +85,7 @@ COPY ./src/run.sh run.sh
 COPY src/signaller signaller.py
 COPY src/pipelines.py pipelines.py
 COPY src/config.py config.py
-COPY src/camerras.py cameras.py
+COPY src/cameras.py cameras.py
 COPY src/utils.py utils.py
 
     # Change attributes
