@@ -11,7 +11,7 @@ class SignallerConfig(BaseModel):
     certificatePassword: Optional[str] = None
 
 
-class Camera:
+class Camera(BaseModel):
     name: str
     protocol: str
     width: int
