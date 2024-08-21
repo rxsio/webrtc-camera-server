@@ -30,7 +30,7 @@ RUN apt-get -y install build-essential libssl-dev libx264-dev libvpx-dev libopus
 RUN apt-get -y install libnice-dev gstreamer1.0-nice
 
     # Python dependencies
-RUN apt-get -y install python3-yaml python3-pyudev python3-psutil python3-httpx udev
+RUN apt-get -y install python3-yaml python3-pyudev python3-psutil python3-httpx python3-pydantic udev
 
 #endregion
 
@@ -82,8 +82,11 @@ RUN cargo build --release
     # Copy
 WORKDIR /
 COPY ./src/run.sh run.sh
-COPY ./src/run.py run.py
-COPY ./src/pipelines.py pipelines.py
+COPY src/signaller signaller.py
+COPY src/pipelines.py pipelines.py
+COPY src/config.py config.py
+COPY src/camerras.py cameras.py
+COPY src/utils.py utils.py
 
     # Change attributes
 RUN chmod +x run.sh
