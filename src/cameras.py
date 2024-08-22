@@ -118,7 +118,8 @@ class H264Camera(Camera):
         sink.set_property("meta", sink_config)
 
         if self.turn_settings is not None:
-            sink.set_property("turn-servers", Gst.ValueArray(tuple(self.turn_settings)))
+            sink.set_property("turn-servers",
+                              Gst.ValueArray(tuple(self.turn_settings)))
 
         host = self.config_signaller.host
         if host == "0.0.0.0":
@@ -166,17 +167,22 @@ class MJPEGCamera(Camera):
         sink.set_property("meta", sink_config)
 
         if self.turn_settings is not None:
-            sink.set_property("turn-servers", Gst.ValueArray(tuple(self.turn_settings)))
+            sink.set_property("turn-servers",
+                              Gst.ValueArray(tuple(self.turn_settings)))
 
         host = self.config_signaller.host
         if host == "0.0.0.0":
             host = "localhost"
 
-        uri = f"wss://{host}:{self.config_signaller.port}"
+        protocol = "wss" if self.config_signaller.certificateCA is not None else "ws"
+        uri = f"{protocol}://{host}:{self.config_signaller.port}"
 
         signaller = sink.get_property("signaller")
         signaller.set_property("uri", uri)
-        signaller.set_property("cafile", self.config_signaller.certificate)
+
+        if self.config_signaller.certificateCA is not None:
+            signaller.set_property("cafile",
+                                   self.config_signaller.certificateCA)
 
         source.link(capsfilter)
         capsfilter.link(jpegdec)

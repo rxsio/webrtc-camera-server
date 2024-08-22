@@ -8,6 +8,7 @@ class SignallerConfig(BaseModel):
     host: str
     port: int
     certificate: Optional[FilePath] = None
+    certificateCA: Optional[FilePath] = None
     certificatePassword: Optional[str] = None
 
 
