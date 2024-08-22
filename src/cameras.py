@@ -118,6 +118,7 @@ class H264Camera(Camera):
         sink.set_property("meta", sink_config)
 
         if self.turn_settings is not None:
+            print("Adding TURN-SERVERS to camera", self.turn_settings)
             sink.set_property("turn-servers",
                               Gst.ValueArray(tuple(self.turn_settings)))
 
@@ -167,6 +168,7 @@ class MJPEGCamera(Camera):
         sink.set_property("meta", sink_config)
 
         if self.turn_settings is not None:
+            print("Adding TURN-SERVERS to camera", self.turn_settings)
             sink.set_property("turn-servers",
                               Gst.ValueArray(tuple(self.turn_settings)))
 

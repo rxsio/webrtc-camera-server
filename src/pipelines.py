@@ -109,8 +109,8 @@ def main():
     # endregion
 
     # region Turn
-    turn_settings = get_turn_settings()
-    turn_servers = parse_turn_settings(turn_settings)
+    turn_credentials = get_turn_settings()
+    turn_settings = parse_turn_settings(turn_credentials)
     # endregion
 
     # region Signaller
