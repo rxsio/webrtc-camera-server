@@ -67,22 +67,22 @@ RUN cd gst-plugins-rs
 
 #region Clone GST-ROS2 Bridge repository
 
-RUN git clone https://github.com/BrettRD/ros-gst-bridge.git /home/builder/jazzy_ws/src/ros-gst-bridge
+RUN git clone https://github.com/BrettRD/ros-gst-bridge.git /jazzy_ws/src/ros-gst-bridge
 
 #endregion
 
 #region Build plugins
 
     # Build GST-Bridge
-WORKDIR /home/builder/jazzy_ws/
+WORKDIR /jazzy_ws/
 RUN source /opt/ros/jazzy/setup.bash
 RUN rosdep fix-permissions
 RUN rosdep update
-RUN rosdep install --from-paths /home/builder/jazzy_ws/src/ --ignore-src -r -y --rosdistro jazzy
-WORKDIR /home/builder/jazzy_ws/
+RUN rosdep install --from-paths /jazzy_ws/src/ --ignore-src -r -y --rosdistro jazzy
+WORKDIR /jazzy_ws/
 RUN source /opt/ros/jazzy/setup.sh && colcon build
 
-RUN source /home/builder/jazzy_ws/install/setup.bash
+RUN source /jazzy_ws/install/setup.bash
 USER root
 
 
@@ -119,7 +119,6 @@ RUN chmod +x run.sh
 #region Clear image
 
     # Remove packages
-RUN apt-get -y remove gcc cmake git cmake-data cppcheck googletest
 RUN apt-get -y remove fonts-urw-base35 opencv-data fonts-droid-fallback 
 RUN apt-get -y remove perl-modules-5.38 qttranslations5-l10n poppler-data    
 RUN apt-get -y remove mesa-vulkan-drivers pocketsphinx-en-us libopencv-contrib-dev
@@ -159,6 +158,8 @@ RUN rm -rf /usr/lib/rustlib
     RUN apt-get -y autoremove
     RUN apt-get -y autoclean
     RUN apt-get -y clean
+
+RUN ls /opt/ros/jazzy/
 
 #endregion
 
