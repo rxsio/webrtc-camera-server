@@ -32,6 +32,9 @@ RUN apt-get -y install libnice-dev gstreamer1.0-nice
     # Python dependencies
 RUN apt-get -y install python3-yaml python3-pyudev python3-psutil python3-httpx python3-pydantic udev
 
+    # GST-ROS2 Bridge dependencies
+RUN apt-get -y install python3-colcon-common-extensions python3-rosdep
+
 #endregion
 
 #region Install Rust
@@ -48,20 +51,40 @@ SHELL ["/bin/bash", "--login", "-c"]
 
 #endregion
 
-#region Clone repository
+#region Setup rosdep
+
+RUN rosdep init
+RUN rosdep update
+
+#endregion
+
+#region Clone GST-Plugins repository
 
 RUN git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git
 RUN cd gst-plugins-rs
 
 #endregion
 
-#region Build frontend
+#region Clone GST-ROS2 Bridge repository
+
+RUN git clone https://github.com/BrettRD/ros-gst-bridge.git /home/builder/jazzy_ws/src/ros-gst-bridge
 
 #endregion
 
 #region Build plugins
 
-# RUN cargo cbuild -p webrtc
+    # Build GST-Bridge
+WORKDIR /home/builder/jazzy_ws/
+RUN source /opt/ros/jazzy/setup.bash
+RUN rosdep fix-permissions
+RUN rosdep update
+RUN rosdep install --from-paths /home/builder/jazzy_ws/src/ --ignore-src -r -y --rosdistro jazzy
+WORKDIR /home/builder/jazzy_ws/
+RUN source /opt/ros/jazzy/setup.sh && colcon build
+
+RUN source /home/builder/jazzy_ws/install/setup.bash
+USER root
+
 
     # Build WebRTC plugin
 WORKDIR /gst-plugins-rs/net/webrtc
