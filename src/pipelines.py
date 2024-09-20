@@ -85,7 +85,7 @@ def wait_for_signaller():
         time.sleep(0.1)
 
     # Primitve way to give time to initialize signaller
-    time.sleep(5)
+    time.sleep(30)
 
     logger.debug("Signaller found!")
 
