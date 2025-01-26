@@ -40,6 +40,12 @@ class Camera:
     def log(self, message):
         self.logger.info(f"[{self.path}]: {message}")
 
+    def debug(self, message):
+        self.logger.debug(f"[{self.path}]: {message}")
+
+    def error(self, message):
+        self.logger.error(f"[{self.path}]: {message}")
+
     def create_pipeline(self):
         raise NotImplementedError()
 
@@ -47,18 +53,22 @@ class Camera:
         self.log("Stream started")
 
         if self.pipeline is None:
+            self.error("Stream pipeline is Null")
             return
 
         self.pipeline.set_state(Gst.State.PLAYING)
+        self.debug("Set pipeline state to PLAYING")
         self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
 
     def stop_pipeline(self):
         self.log("Stream stopped")
 
         if self.pipeline is None:
+            self.info("Stream pipeline is Null")
             return
 
         self.pipeline.set_state(Gst.State.NULL)
+        self.debug("Set pipeline state to NULL")
         self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
 
     def restart_pipeline(self):
@@ -118,7 +128,7 @@ class H264Camera(Camera):
         sink.set_property("meta", sink_config)
 
         if self.turn_settings is not None:
-            print("Adding TURN-SERVERS to camera", self.turn_settings)
+            self.debug("Adding TURN-SERVERS to camera", self.turn_settings)
             sink.set_property("turn-servers",
                               Gst.ValueArray(tuple(self.turn_settings)))
 
@@ -168,7 +178,7 @@ class MJPEGCamera(Camera):
         sink.set_property("meta", sink_config)
 
         if self.turn_settings is not None:
-            print("Adding TURN-SERVERS to camera", self.turn_settings)
+            self.debug("Adding TURN-SERVERS to camera", self.turn_settings)
             sink.set_property("turn-servers",
                               Gst.ValueArray(tuple(self.turn_settings)))
 
