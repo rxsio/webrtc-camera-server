@@ -1,5 +1,2 @@
 host: "0.0.0.0"
-port: 8443
-certificate: "/certificates/firo.crt"
-certificateCA: "/"
-certificatePassword: "skar"
+port: 8082
