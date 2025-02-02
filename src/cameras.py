@@ -201,6 +201,55 @@ class MJPEGCamera(Camera):
         jpegdec.link(sink)
 
 
+class RawCamera(Camera):
+    def create_pipeline(self):
+        self.pipeline = Gst.Pipeline.new("pipeline")
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", self.on_message)
+
+        source = Gst.ElementFactory.make("v4l2src", "camera-source")
+        capsfilter = Gst.ElementFactory.make("capsfilter", "filter")
+        convert = Gst.ElementFactory.make("videoconvert", "convert")
+        sink = Gst.ElementFactory.make("webrtcsink", "webrtc")
+
+        self.pipeline.add(source)
+        self.pipeline.add(capsfilter)
+        self.pipeline.add(convert)
+        self.pipeline.add(sink)
+
+        source.set_property("device", self.path)
+        capsfilter.set_property(
+            "caps",
+            Gst.Caps.from_string(
+                f"video/x-raw, format=Y16, width=${self.width}, height=${self.height}, framerate=${self.framerate}/1"
+            ),
+        )
+
+        sink_config = Gst.Structure.new_empty("meta")
+        sink_config.set_value("name", self.name)
+        sink.set_property("meta", sink_config)
+
+        if self.turn_settings is not None:
+            self.debug("Adding TURN-SERVERS to camera", self.turn_settings)
+            sink.set_property("turn-servers",
+                              Gst.ValueArray(tuple(self.turn_settings)))
+
+        host = self.config_signaller.host
+        if host == "0.0.0.0":
+            host = "localhost"
+
+        uri = f"wss://{host}:{self.config_signaller.port}"
+
+        signaller = sink.get_property("signaller")
+        signaller.set_property("uri", uri)
+        signaller.set_property("cafile", self.config_signaller.certificate)
+
+        source.link(capsfilter)
+        capsfilter.link(convert)
+        convert.link(sink)
+
+
 # endregion
 
 
@@ -289,6 +338,14 @@ class CamerasManager:
             )
         elif protocol == "mjpeg":
             self.cameras[id_path] = MJPEGCamera(
+                logger=self.logger, config_signaller=self.config_signaller,
+                turn_settings=self.turn_settings, path=path, id=id_path,
+                name=name,
+                width=width, height=height,
+                framerate=framerate
+            )
+        elif protocol == "raw":
+            self.cameras[id_path] = RawCamera(
                 logger=self.logger, config_signaller=self.config_signaller,
                 turn_settings=self.turn_settings, path=path, id=id_path,
                 name=name,
