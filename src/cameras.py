@@ -298,11 +298,11 @@ class CamerasManager:
 
         if id_path in self.config.cameras:
             camera_config = self.config.cameras[id_path]
-            name = camera_config["name"]
-            protocol = camera_config["protocol"]
-            width = camera_config["width"]
-            height = camera_config["height"]
-            framerate = camera_config["framerate"]
+            name = camera_config.name
+            protocol = camera_config.protocol
+            width = camera_config.width
+            height = camera_config.height
+            framerate = camera_config.framerate
             self.logger.info(
                 f"adding camera {name} with id={id_path} path={path}")
         else:
