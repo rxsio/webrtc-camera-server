@@ -7,6 +7,7 @@ from pydantic import FilePath, BaseModel
 class SignallerConfig(BaseModel):
     host: str
     port: int
+    secure: Optional[bool] = None
     certificate: Optional[FilePath] = None
     certificateCA: Optional[FilePath] = None
     certificatePassword: Optional[str] = None
