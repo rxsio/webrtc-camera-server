@@ -136,7 +136,7 @@ class H264Camera(Camera):
         if host == "0.0.0.0":
             host = "localhost"
 
-        protocol = "wss" if self.config_signaller.secure == True
+        protocol = "wss" if self.config_signaller.secure == True else "ws"
         uri = f"{protocol}://{host}:{self.config_signaller.port}"
 
         signaller = sink.get_property("signaller")
@@ -190,7 +190,7 @@ class MJPEGCamera(Camera):
         if host == "0.0.0.0":
             host = "localhost"
 
-        protocol = "wss" if self.config_signaller.secure == True
+        protocol = "wss" if self.config_signaller.secure == True else "ws"
         uri = f"{protocol}://{host}:{self.config_signaller.port}"
 
         signaller = sink.get_property("signaller")
