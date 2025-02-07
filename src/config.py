@@ -19,6 +19,7 @@ class Camera(BaseModel):
     width: int
     height: int
     framerate: int
+    disable: Optional[bool] = None
 
 
 class PipelinesConfig(BaseModel):

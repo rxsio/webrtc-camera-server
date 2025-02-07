@@ -27,7 +27,14 @@ def create_signaller(config: SignallerConfig):
             "--cert-password", config.certificatePassword
         ])
 
-    process = subprocess.Popen([str(elem) for elem in command], env=env)
+    with open("signaller.log", "w") as handle:
+        process = subprocess.Popen(
+            [str(elem) for elem in command], 
+            env=env,
+            text=True,
+            stdout=handle,
+            stderr=handle
+        )
 
     try:
         process.wait()

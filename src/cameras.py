@@ -307,6 +307,12 @@ class CamerasManager:
             width = camera_config.width
             height = camera_config.height
             framerate = camera_config.framerate
+
+            if camera_config.disable is not None and camera_config.disable:
+                self.logger.info(
+                    f"skipping camera {name} with id={id_path} path={path} - DISABLED")
+                return
+
             self.logger.info(
                 f"adding camera {name} with id={id_path} path={path}")
         else:
