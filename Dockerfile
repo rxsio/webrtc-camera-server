@@ -66,7 +66,7 @@ RUN cd gst-plugins-rs
 #endregion
 
 #region Clone GST-ROS2 Bridge repository
-RUN git clone https://github.com/Wihmajster/ros-gst-bridge.git /jazzy_ws/src/ros-gst-bridge
+RUN git clone https://github.com/BrettRD/ros-gst-bridge.git /jazzy_ws/src/ros-gst-bridge
 
 #endregion
 
