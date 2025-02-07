@@ -215,11 +215,13 @@ class RawCamera(Camera):
         source = Gst.ElementFactory.make("v4l2src", "camera-source")
         capsfilter = Gst.ElementFactory.make("capsfilter", "filter")
         convert = Gst.ElementFactory.make("videoconvert", "convert")
+        queue = Gst.ElementFactory.make("queue", "queue")
         sink = Gst.ElementFactory.make("webrtcsink", "webrtc")
 
         self.pipeline.add(source)
         self.pipeline.add(capsfilter)
         self.pipeline.add(convert)
+        self.pipeline.add(queue)
         self.pipeline.add(sink)
 
         source.set_property("device", self.path)
@@ -251,7 +253,8 @@ class RawCamera(Camera):
 
         source.link(capsfilter)
         capsfilter.link(convert)
-        convert.link(sink)
+        convert.link(queue)
+        queue.link(sink)
 
 
 # endregion
