@@ -228,7 +228,7 @@ class RawCamera(Camera):
         capsfilter.set_property(
             "caps",
             Gst.Caps.from_string(
-                f"video/x-raw, format=Y16, width=${self.width}, height=${self.height}, framerate=${self.framerate}/1"
+                f"video/x-raw, format=GRAY16_LE, width=${self.width}, height=${self.height}, framerate=${self.framerate}/1"
             ),
         )
 
