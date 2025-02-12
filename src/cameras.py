@@ -245,11 +245,15 @@ class RawCamera(Camera):
         if host == "0.0.0.0":
             host = "localhost"
 
-        uri = f"wss://{host}:{self.config_signaller.port}"
+        protocol = "wss" if self.config_signaller.secure == True else "ws"
+        uri = f"{protocol}://{host}:{self.config_signaller.port}"
 
         signaller = sink.get_property("signaller")
         signaller.set_property("uri", uri)
-        signaller.set_property("cafile", self.config_signaller.certificate)
+
+        if self.config_signaller.certificateCA is not None:
+            signaller.set_property("cafile",
+                                   self.config_signaller.certificateCA)
 
         source.link(capsfilter)
         capsfilter.link(convert)
