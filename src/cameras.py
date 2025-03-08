@@ -260,6 +260,65 @@ class RawCamera(Camera):
         convert.link(queue)
         queue.link(sink)
 
+class UDPCamera(Camera):
+
+    def __init__(self, logger, config_signaller, turn_settings,
+                 width, height, framerate, v_format, port, name):
+
+        self.format = v_format
+        self.port = port
+        super().__init__(logger, config_signaller, turn_settings, f"UDP {port}", None, name, width, height, framerate)
+
+    def create_pipeline(self):
+        self.pipeline = Gst.Pipeline.new("pipeline")
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", self.on_message)
+
+        source = Gst.ElementFactory.make("udpsrc", "udp-source")
+        capsfilter = Gst.ElementFactory.make("capsfilter", "filter")
+        convert = Gst.ElementFactory.make("videoconvert", "convert")
+        queue = Gst.ElementFactory.make("queue", "queue")
+        sink = Gst.ElementFactory.make("webrtcsink", "webrtc")
+
+        self.pipeline.add(source)
+        self.pipeline.add(capsfilter)
+        self.pipeline.add(convert)
+        self.pipeline.add(queue)
+        self.pipeline.add(sink)
+
+        source.set_property("port", self.port)
+        caps = Gst.Caps.from_string(f"video/x-raw, format={self.format}, width={self.width}, height={self.height}, framerate={self.framerate}/1")
+        capsfilter.set_property("caps", caps)
+
+        sink_config = Gst.Structure.new_empty("meta")
+        sink_config.set_value("name", self.name)
+        sink.set_property("meta", sink_config)
+
+        if self.turn_settings is not None:
+            self.debug(f"Adding TURN-SERVERS to camera {self.turn_settings}")
+            sink.set_property("turn-servers",
+                              Gst.ValueArray(tuple(self.turn_settings)))
+
+        host = self.config_signaller.host
+        if host == "0.0.0.0":
+            host = "localhost"
+
+        protocol = "wss" if self.config_signaller.secure == True else "ws"
+        uri = f"{protocol}://{host}:{self.config_signaller.port}"
+
+        signaller = sink.get_property("signaller")
+        signaller.set_property("uri", uri)
+
+        if self.config_signaller.certificateCA is not None:
+            signaller.set_property("cafile",
+                                   self.config_signaller.certificateCA)
+        
+
+        source.link(capsfilter)
+        capsfilter.link(convert)
+        convert.link(queue)
+        queue.link(sink)
 
 # endregion
 
@@ -274,6 +333,7 @@ class CamerasManager:
         self.turn_settings = turn_settings
 
         self.cameras = {}
+        self.udp_cameras = {}
         self.lock = threading.Lock()
         self.udev_context = pyudev.Context()
 
@@ -385,6 +445,15 @@ class CamerasManager:
         del self.cameras[id_path]
 
         self.lock.release()
+
+    def start_udp_cameras(self):
+        for udp in self.config.udp_cameras.values():
+            self.udp_cameras[udp.port] = UDPCamera(
+                logger=self.logger, config_signaller=self.config_signaller,
+                turn_settings=self.turn_settings, width=udp.width, height=udp.height, framerate=udp.framerate, port=udp.port, v_format=udp.format,
+                name=udp.name
+            )
+
 
     def start_camera_monitoring(self):
         self.logger.debug("Start Camera monitoring")

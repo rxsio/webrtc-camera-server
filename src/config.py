@@ -22,8 +22,18 @@ class Camera(BaseModel):
     disable: Optional[bool] = None
 
 
+class UDPCamera(BaseModel):
+    name: str
+    width: int
+    height: int
+    framerate: int
+    port: int
+    format: str
+
+
 class PipelinesConfig(BaseModel):
     cameras: dict[str, Camera]
+    udp_cameras: dict[str, UDPCamera] = {}
 
 
 class TurnConfig(BaseModel):

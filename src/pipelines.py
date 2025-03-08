@@ -123,6 +123,7 @@ def main():
     # region Cameras
     manager = CamerasManager(config, config_signaller, turn_settings)
     manager.detect_cameras()
+    manager.start_udp_cameras()
     manager.start_camera_monitoring()
     # endregion
 
