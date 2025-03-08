@@ -1,4 +1,5 @@
 from typing import Optional
+from enum import Enum
 
 import yaml
 from pydantic import FilePath, BaseModel
@@ -13,6 +14,14 @@ class SignallerConfig(BaseModel):
     certificatePassword: Optional[str] = None
 
 
+class CameraMode(str, Enum):
+    WebRTC = "webrtc"
+    UDP = "udp"
+
+class UDPSettings(BaseModel):
+    host: str
+    port: int
+
 class Camera(BaseModel):
     name: str
     protocol: str
@@ -20,7 +29,8 @@ class Camera(BaseModel):
     height: int
     framerate: int
     disable: Optional[bool] = None
-
+    mode: CameraMode = CameraMode.WebRTC
+    udp: Optional[UDPSettings] = None
 
 class UDPCamera(BaseModel):
     name: str

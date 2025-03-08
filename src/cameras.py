@@ -5,7 +5,7 @@ import gi
 import pyudev
 import yaml
 
-from config import PipelinesConfig, SignallerConfig
+from config import PipelinesConfig, SignallerConfig, CameraMode
 from utils import create_logger
 
 gi.require_version("Gst", "1.0")
@@ -260,6 +260,45 @@ class RawCamera(Camera):
         convert.link(queue)
         queue.link(sink)
 
+class UDPOutCamera(Camera):
+
+    def __init__(self, logger, path, id, name, width, height, framerate, host, port):
+
+        self.host = host
+        self.port = port
+        super().__init__(logger, None, None, path, id, name, width, height, framerate)
+
+    def create_pipeline(self):
+        self.pipeline = Gst.Pipeline.new("pipeline")
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", self.on_message)
+
+        source = Gst.ElementFactory.make("v4l2src", "camera-source")
+        capsfilter = Gst.ElementFactory.make("capsfilter", "filter")
+        convert = Gst.ElementFactory.make("videoconvert", "convert")
+        sink = Gst.ElementFactory.make("udpsink", "udpsink")
+
+        self.pipeline.add(source)
+        self.pipeline.add(capsfilter)
+        self.pipeline.add(convert)
+        self.pipeline.add(sink)
+
+        source.set_property("device", self.path)
+        capsfilter.set_property(
+            "caps",
+            Gst.Caps.from_string(
+                f"video/x-raw, width=${self.width}, height=${self.height}, framerate=${self.framerate}/1"
+            ),
+        )
+
+        sink.set_property("host", self.host)
+        sink.set_property("port", self.port)
+
+        source.link(capsfilter)
+        capsfilter.link(convert)
+        convert.link(sink)
+
 class UDPCamera(Camera):
 
     def __init__(self, logger, config_signaller, turn_settings,
@@ -366,6 +405,9 @@ class CamerasManager:
         width = 1280
         height = 720
         framerate = 10
+        mode = CameraMode.WebRTC
+        udp_host = ""
+        udp_port = 0
 
         if id_path in self.config.cameras:
             camera_config = self.config.cameras[id_path]
@@ -374,6 +416,11 @@ class CamerasManager:
             width = camera_config.width
             height = camera_config.height
             framerate = camera_config.framerate
+            mode = camera_config.mode
+
+            if mode == CameraMode.UDP:
+                udp_host = camera_config.udp.host
+                udp_port = camera_config.udp.port
 
             if camera_config.disable is not None and camera_config.disable:
                 self.logger.info(
@@ -405,30 +452,36 @@ class CamerasManager:
 
         self.lock.acquire(blocking=True)
 
-        if protocol == "h264":
-            self.cameras[id_path] = H264Camera(
-                logger=self.logger, config_signaller=self.config_signaller,
-                turn_settings=self.turn_settings, path=path, id=id_path,
-                name=name,
-                width=width, height=height,
-                framerate=framerate
+        if mode == CameraMode.WebRTC:
+            if protocol == "h264":
+                self.cameras[id_path] = H264Camera(
+                    logger=self.logger, config_signaller=self.config_signaller,
+                    turn_settings=self.turn_settings, path=path, id=id_path,
+                    name=name,
+                    width=width, height=height,
+                    framerate=framerate
+                )
+            elif protocol == "mjpeg":
+                self.cameras[id_path] = MJPEGCamera(
+                    logger=self.logger, config_signaller=self.config_signaller,
+                    turn_settings=self.turn_settings, path=path, id=id_path,
+                    name=name,
+                    width=width, height=height,
+                    framerate=framerate
+                )
+            elif protocol == "raw":
+                self.cameras[id_path] = RawCamera(
+                    logger=self.logger, config_signaller=self.config_signaller,
+                    turn_settings=self.turn_settings, path=path, id=id_path,
+                    name=name,
+                    width=width, height=height,
+                    framerate=framerate
+                )
+        elif mode == CameraMode.UDP:
+            self.cameras[id_path] = UDPOutCamera(
+                logger=self.logger, path=path, id=id_path, name=name, width=width, height=height, framerate=framerate, host=udp_host, port=udp_port
             )
-        elif protocol == "mjpeg":
-            self.cameras[id_path] = MJPEGCamera(
-                logger=self.logger, config_signaller=self.config_signaller,
-                turn_settings=self.turn_settings, path=path, id=id_path,
-                name=name,
-                width=width, height=height,
-                framerate=framerate
-            )
-        elif protocol == "raw":
-            self.cameras[id_path] = RawCamera(
-                logger=self.logger, config_signaller=self.config_signaller,
-                turn_settings=self.turn_settings, path=path, id=id_path,
-                name=name,
-                width=width, height=height,
-                framerate=framerate
-            )
+            ...
 
         self.lock.release()
 
