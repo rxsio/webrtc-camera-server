@@ -18,6 +18,9 @@ export GST_PLUGIN_PATH=/gst-plugins-rs/target/release:$GST_PLUGIN_PATH
     (
         python3 pipelines.py ; kill 0
     ) &
+    (
+        python3 color_ir_camera.py ; kill 0
+    ) &
     wait
 )
 
