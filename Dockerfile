@@ -30,7 +30,7 @@ RUN apt-get -y install build-essential libssl-dev libx264-dev libvpx-dev libopus
 RUN apt-get -y install libnice-dev gstreamer1.0-nice
 
     # Python dependencies
-RUN apt-get -y install python3-yaml python3-pyudev python3-psutil python3-httpx python3-pydantic udev
+RUN apt-get -y install python3-yaml python3-pyudev python3-psutil python3-httpx python3-pydantic python3-opencv python3-numpy udev
 
     # GST-ROS2 Bridge dependencies
 RUN apt-get -y install python3-colcon-common-extensions python3-rosdep
@@ -109,6 +109,7 @@ COPY src/pipelines.py pipelines.py
 COPY src/config.py config.py
 COPY src/cameras.py cameras.py
 COPY src/utils.py utils.py
+COPY src/color_ir_camera.py color_ir_camera.py
 
     # Change attributes
 RUN chmod +x run.sh
